@@ -25,10 +25,9 @@ def add_edge(graph, u, v, p):
 # Busca o vértice u como chave no dicionário e busca o vértice v como item 
 # na lista de valores. Atualiza o w da lista.
 def update_weight(graph, u, v, new_weight):
-	for idx, edge in enumerate(graph[u]):
-		neighbour, _ = edge
-		if neighbour == v:
-			graph[u][idx][1] = new_weight
+	if v in graph[u][0][0]:
+		graph[u][0][1] = new_weight
+
 
 # verify_cycles: Dict -> Dict
 # Verifica se existe um ciclo dentro do grafo e atualiza o peso
@@ -137,6 +136,7 @@ while(first_line != "0 0"):
 
 		resultado = shortest_path_cost(graph_1, O, D)
 		print(resultado)
+		
 		# results.append(shortest_path_cost(O, D))
 
 		count += 1
