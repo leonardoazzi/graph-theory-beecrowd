@@ -5,14 +5,10 @@ from collections import defaultdict
 import sys
 import heapq
 
-global graph
-graph_1 = defaultdict(list)
-
 # Adiciona um vértice disconexo ao grafo se for um novo vértice
 # v: vértice
 def add_vertex(graph, v):
-	if v not in graph:
-		graph[v] = []
+	graph[v] = []
 
 # Adiciona uma aresta ponderada entre dois vértices
 # u: vértice de origem da aresta
@@ -25,8 +21,9 @@ def add_edge(graph, u, v, p):
 # Busca o vértice u como chave no dicionário e busca o vértice v como item 
 # na lista de valores. Atualiza o w da lista.
 def update_weight(graph, u, v, new_weight):
-	if v in graph[u][0][0]:
-		graph[u][0][1] = new_weight
+	for edge in graph[u]:
+		if v in edge:
+			edge[1] = new_weight
 
 
 # verify_cycles: Dict -> Dict
@@ -35,7 +32,7 @@ def update_weight(graph, u, v, new_weight):
 def verify_cycles(graph):
 	# para cada vértice
 	# for i in graph.keys():
-	for i in list(graph):
+	for i in graph.keys():
 		
 		# para cada vizinho do vértice atual e peso da aresta
 		for n, w in graph[i]:
@@ -50,7 +47,7 @@ def verify_cycles(graph):
 
 # dijkstra: Any -> int
 # Implementa o algoritmo de dijkstra para menor caminho em um grafo.
-def dijkstra(graph, start_vertex):
+def dijkstra(graph, start_vertex, destiny_vertex):
 	distances = {v: float('infinity') for v in graph}
 	pred = {v: None for v in graph}
 
@@ -65,7 +62,7 @@ def dijkstra(graph, start_vertex):
 		_, current_vertex = heapq.heappop(pq)
 		if current_vertex not in visited:
 			visited.add(current_vertex)
-			# if current_vertex == destiny: return cost
+			if current_vertex == destiny_vertex: return distances
 
 			for neighbour, weight in graph[current_vertex]:
 				if neighbour in visited: continue
@@ -80,7 +77,7 @@ def dijkstra(graph, start_vertex):
 # shortest_path_cost: Any, Any -> int
 # Obtém o custo do menor caminho entre uma origem e um destino no grafo.
 def shortest_path_cost(graph, u, v):
-	shortest_path = dijkstra(graph, u)
+	shortest_path = dijkstra(graph, u, v)
 
 	cost = float('infinity')
 	for destiny, distance in shortest_path.items():
@@ -91,19 +88,8 @@ def shortest_path_cost(graph, u, v):
 	
 	return cost
 
-# ========== TESTES ==========
-# print("\ngrafo 1")
-# add_vertex('1')
-# add_vertex('2')
-# add_vertex('3')
-# add_vertex('4')
-# add_edge('1', '2', 5) 
-# add_edge('2', '1', 10) 
-# add_edge('3', '4', 8)
-# add_edge('4', '3', 7)
-# add_edge('2', '3', 6)
-# verify_cycles(graph)
-
+graph_1 = defaultdict(list)
+dict_consultas = defaultdict(list)
 
 first_line = input()
 
@@ -121,38 +107,50 @@ while(first_line != "0 0"):
 	while (count < int(E)):
 		acordo = input()
 		X, Y, H = acordo.split(" ")
-		add_edge(graph_1, X, Y, int(H)) 
-		count += 1
 
-	verify_cycles(graph_1)
+		if int(Y) > N or int(H) > 1000:
+			continue
+
+		add_edge(graph_1, X, Y, int(H)) 
+
+		for pair in graph_1[Y]:
+			if pair[0] == X:
+				update_weight(graph_1, Y, X, 0)
+				update_weight(graph_1, X, Y, 0)
+
+		count += 1
 
 	K = int(input())
 
 	count = 0
 	results = []
+
+	if K > 100:
+			continue
+
 	while (count < K):
 		consulta = input()
 		O, D = consulta.split(" ")
 
-		resultado = shortest_path_cost(graph_1, O, D)
+		if int(D) > N:
+			continue
+
+		rota = f"({O},{D})"
+
+		if rota in dict_consultas:
+			resultado = dict_consultas[rota]
+		else:
+			resultado = shortest_path_cost(graph_1, O, D)
+
+			dict_consultas[rota] = resultado
+
 		print(resultado)
-		
-		# results.append(shortest_path_cost(O, D))
 
 		count += 1
 
-	# for node in graph:
-	#     origin = node
-	#     shortest_path = dijkstra(origin)
-
-	#     for destiny, distance in shortest_path.items():
-	#         if distance == (inf-1):
-	#             distance = "Nao e possivel entregar a carta"
-	#         print(f"Caminho mais curto de {origin} para {destiny}: {distance}")
-
-	# print(results)
-	print("\n")
+	print()
 
 	graph_1.clear()
+	dict_consultas.clear()
 
 	first_line = input()
