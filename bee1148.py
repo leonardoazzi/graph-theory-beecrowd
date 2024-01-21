@@ -3,99 +3,94 @@
 
 from collections import defaultdict
 import sys
+import heapq
 
 global graph
-graph = defaultdict(list)
-
-inf = sys.maxsize
+graph_1 = defaultdict(list)
 
 # Adiciona um vértice disconexo ao grafo se for um novo vértice
 # v: vértice
-def add_vertex(v):
-    if v not in graph:
-        graph[v] = []
+def add_vertex(graph, v):
+	if v not in graph:
+		graph[v] = []
 
 # Adiciona uma aresta ponderada entre dois vértices
 # u: vértice de origem da aresta
 # v: vértice de destino da aresta
 # p: peso da aresta
-def add_edge(u, v, p):
-    graph[u].append([v, p]) 
-
-def clear(v):
-    for i in list(v.keys()):
-        v[i]=False
-
-def search(graph):
-    visited = {}
-    for i in graph.keys():
-        visited[i]=False
+def add_edge(graph, u, v, p):
+	graph[u].append([v, p]) 
 
 # update_weight: Any, Any, int -> Dict
 # Busca o vértice u como chave no dicionário e busca o vértice v como item 
 # na lista de valores. Atualiza o w da lista.
-def update_weight(u, v, new_weight):
-    for idx, edge in enumerate(graph[u]):
-        neighbour, _ = edge
-        if neighbour == v:
-            graph[u][idx][1] = new_weight
+def update_weight(graph, u, v, new_weight):
+	for idx, edge in enumerate(graph[u]):
+		neighbour, _ = edge
+		if neighbour == v:
+			graph[u][idx][1] = new_weight
 
 # verify_cycles: Dict -> Dict
 # Verifica se existe um ciclo dentro do grafo e atualiza o peso
 # das arestas
 def verify_cycles(graph):
-    # para cada vértice
-    # for i in graph.keys():
-    for i in list(graph):
-        
-        # para cada vizinho do vértice atual e peso da aresta
-        for n, w in graph[i]:
+	# para cada vértice
+	# for i in graph.keys():
+	for i in list(graph):
+		
+		# para cada vizinho do vértice atual e peso da aresta
+		for n, w in graph[i]:
 
-            # para cada sucessor do vizinho e respectivo peso
-            for nn, ww in graph[n]:
-                
-                # se o sucessor do vizinho for o próprio vértice atual
-                if nn == i:
+			# para cada sucessor do vizinho e respectivo peso
+			for nn, ww in graph[n]:
+				
+				# se o sucessor do vizinho for o próprio vértice atual
+				if nn == i:
 
-                    update_weight(i, n, 0)
+					update_weight(graph_1, i, n, 0)
 
 # dijkstra: Any -> int
 # Implementa o algoritmo de dijkstra para menor caminho em um grafo.
-def dijkstra(u):
-    distances = {v: inf-1 for v in graph}
-    distances[u] = 0
+def dijkstra(graph, start_vertex):
+	distances = {v: float('infinity') for v in graph}
+	pred = {v: None for v in graph}
 
-    visited = set()
-    
-    while visited != set(distances):
-        current_vertice = None
-        shortest_distance = inf
-        for v in graph:
-            if v not in visited and distances[v] < shortest_distance:
-                current_vertice = v
-                shortest_distance = distances[v]
+	distances[start_vertex] = 0
+	pq = []
+	visited = set()
 
-        visited.add(current_vertice)
+	for v in distances:
+		heapq.heappush(pq, (distances[v], v))
 
-        for neighbour, weight in graph[current_vertice]:
-            if distances[current_vertice] + weight < distances[neighbour]:
-                distances[neighbour] = distances[current_vertice] + weight
+	while len(pq) > 0:
+		_, current_vertex = heapq.heappop(pq)
+		if current_vertex not in visited:
+			visited.add(current_vertex)
+			# if current_vertex == destiny: return cost
 
-    return distances
+			for neighbour, weight in graph[current_vertex]:
+				if neighbour in visited: continue
+				updated_distance = distances[current_vertex] + weight
+				if neighbour in distances:
+					if updated_distance < distances[neighbour]:
+						distances[neighbour] = updated_distance
+						pred[neighbour] = current_vertex
+						heapq.heappush(pq, (updated_distance, neighbour))
+	return distances
 
 # shortest_path_cost: Any, Any -> int
 # Obtém o custo do menor caminho entre uma origem e um destino no grafo.
-def shortest_path_cost(u, v):
-    shortest_path = dijkstra(u)
+def shortest_path_cost(graph, u, v):
+	shortest_path = dijkstra(graph, u)
 
-    cost = inf
-    for destiny, distance in shortest_path.items():
-        if destiny == v:
-            cost = distance
-            if distance == (inf-1):
-                cost = "Nao e possivel entregar a carta"
-    
-    return cost
+	cost = float('infinity')
+	for destiny, distance in shortest_path.items():
+		if destiny == v:
+			cost = distance
+			if distance == float('infinity'):
+				cost = "Nao e possivel entregar a carta"
+	
+	return cost
 
 # ========== TESTES ==========
 # print("\ngrafo 1")
@@ -115,42 +110,49 @@ first_line = input()
 
 while(first_line != "0 0"):
 
-    N, E = first_line.split(" ")
+	cidades, acordos = first_line.split(" ")
 
-    count = 0
-    while (count < int(E)):
-        acordo = input()
-        X, Y, H = acordo.split(" ")
-        add_edge(X, Y, int(H)) 
-        count += 1
+	N = int(cidades)
+	E = int(acordos)
 
-    verify_cycles(graph)
+	if N > 500 or E > (N**2):
+		continue
 
-    K = int(input())
+	count = 0
+	while (count < int(E)):
+		acordo = input()
+		X, Y, H = acordo.split(" ")
+		add_edge(graph_1, X, Y, int(H)) 
+		count += 1
 
-    count = 0
-    results = []
-    while (count < K):
-        consulta = input()
-        O, D = consulta.split(" ")
+	verify_cycles(graph_1)
 
-        print(shortest_path_cost(O, D))
-        # results.append(shortest_path_cost(O, D))
+	K = int(input())
 
-        count += 1
+	count = 0
+	results = []
+	while (count < K):
+		consulta = input()
+		O, D = consulta.split(" ")
 
-    # for node in graph:
-    #     origin = node
-    #     shortest_path = dijkstra(origin)
+		resultado = shortest_path_cost(graph_1, O, D)
+		print(resultado)
+		# results.append(shortest_path_cost(O, D))
 
-    #     for destiny, distance in shortest_path.items():
-    #         if distance == (inf-1):
-    #             distance = "Nao e possivel entregar a carta"
-    #         print(f"Caminho mais curto de {origin} para {destiny}: {distance}")
+		count += 1
 
-    # print(results)
-    print("\n")
+	# for node in graph:
+	#     origin = node
+	#     shortest_path = dijkstra(origin)
 
-    graph.clear()
+	#     for destiny, distance in shortest_path.items():
+	#         if distance == (inf-1):
+	#             distance = "Nao e possivel entregar a carta"
+	#         print(f"Caminho mais curto de {origin} para {destiny}: {distance}")
 
-    first_line = input()
+	# print(results)
+	print("\n")
+
+	graph_1.clear()
+
+	first_line = input()
