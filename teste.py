@@ -25,70 +25,62 @@ def update_weight(graph, u, v, new_weight):
 		if v in edge:
 			edge[1] = new_weight
 
+
+# verify_cycles: Dict -> Dict
+# Verifica se existe um ciclo dentro do grafo e atualiza o peso
+# das arestas
+def verify_cycles(graph):
+	# para cada vértice
+	# for i in graph.keys():
+	for i in graph.keys():
+		
+		# para cada vizinho do vértice atual e peso da aresta
+		for n, w in graph[i]:
+
+			# para cada sucessor do vizinho e respectivo peso
+			for nn, ww in graph[n]:
+				
+				# se o sucessor do vizinho for o próprio vértice atual
+				if nn == i:
+
+					update_weight(graph_1, i, n, 0)
+
 # dijkstra: Any -> int
 # Implementa o algoritmo de dijkstra para menor caminho em um grafo.
-def dijkstra(graph, dist_dict, start_vertex, destiny_vertex):
-	#print("DIJKSTRA DE", start_vertex, "PARA", destiny_vertex, "\n-------------------\n")
-	#print("Grafo: ", graph, "\n")
-
-	if len(dist_dict) == 0:
+def dijkstra(graph, visited, distances, start_vertex, destiny_vertex):
+	if distances == None:
 		distances = {v: float('infinity') for v in graph}
-		distances[start_vertex] = 0
-	else:
-		if start_vertex in dist_dict:
-			distances = dist_dict[start_vertex]
-		else:
-			distances = {v: float('infinity') for v in graph}
-			distances[start_vertex] = 0
+		# pred = {v: None for v in graph}
+		visited = set()
 
-	#print("memória inicial\t", dist_dict)
-
-	pred = {}
-	visited = set()
+	distances[start_vertex] = 0
 	pq = []
 	
+
 	for v in distances:
 		heapq.heappush(pq, (distances[v], v))
 
 	while len(pq) > 0:
 		_, current_vertex = heapq.heappop(pq)
-		#print("visitados:\t", visited)
-		#print("vertice atual:\t", current_vertex)
+		if current_vertex not in visited:
+			visited.add(current_vertex)
+			if current_vertex == destiny_vertex: return visited, distances
 
-		#print("distancia até o destino\t", distances[destiny_vertex])
-		
-		if destiny_vertex in distances and distances[destiny_vertex] == float('infinity'):
-
-				if current_vertex not in visited:
-					visited.add(current_vertex)
-					if current_vertex == destiny_vertex: return pred, distances
-
-					for neighbour, weight in graph[current_vertex]:
-						if neighbour in visited: continue
-						updated_distance = distances[current_vertex] + weight
-						if neighbour in distances and updated_distance < distances[neighbour]:
-								distances[neighbour] = updated_distance
-								pred[current_vertex] = neighbour
-								heapq.heappush(pq, (updated_distance, neighbour))
-
-		else:
-			#print("SKIP!")
-			return pred, distances
+			for neighbour, weight in graph[current_vertex]:
+				if neighbour in visited: continue
+				updated_distance = distances[current_vertex] + weight
+				if neighbour in distances:
+					if updated_distance < distances[neighbour]:
+						distances[neighbour] = updated_distance
+						# pred[neighbour] = current_vertex
+						heapq.heappush(pq, (updated_distance, neighbour))
 			
-	return pred, distances
+	return visited, distances
 
 # shortest_path_cost: Any, Any -> int
 # Obtém o custo do menor caminho entre uma origem e um destino no grafo.
-def shortest_path_cost(graph, dist_dict, u, v):
-	saved_paths, distances = dijkstra(graph, memory, u, v)
-
-	if u not in memory:
-		memory[u] = distances
-
-	#print("Distâncias salvas\t", memory)
-
-	#print("shortest path:\t", saved_paths)
-	#print("distancia:\t", distances[v])
+def shortest_path_cost(graph, visit_list, dist_dict, u, v):
+	visited, distances = dijkstra(graph, visit_list, dist_dict, u, v)
 
 	cost = float('infinity')
 	for destiny, distance in distances.items():
@@ -97,7 +89,7 @@ def shortest_path_cost(graph, dist_dict, u, v):
 			if distance == float('infinity'):
 				cost = "Nao e possivel entregar a carta"
 	
-	return cost
+	return cost, visited, distances
 
 graph_1 = defaultdict(list)
 dict_consultas = defaultdict(list)
@@ -139,8 +131,6 @@ while(first_line != "0 0"):
 	if K > 100:
 			continue
 
-	memory = {}
-
 	while (count < K):
 		consulta = input()
 		O, D = consulta.split(" ")
@@ -148,17 +138,21 @@ while(first_line != "0 0"):
 		if int(D) > N:
 			continue
 		
-		res = shortest_path_cost(graph_1, memory, O, D)
+		if count == 0:
+			res, visited, distances = shortest_path_cost(graph_1, None, None, O, D)
+			print("state:\t", visited, distances)
+		else:
+			res, visited, distances = shortest_path_cost(graph_1, visited, distances, O, D)
 
-		# print("\n---\nresultado\t",res, "\n---\n")
-		print(res)
+		# fazer save state do grafo
+
+		print("resultado\t",res)
 
 		count += 1
 
 	print()
 
 	graph_1.clear()
-	memory.clear()
 	dict_consultas.clear()
 
 	first_line = input()
