@@ -5,10 +5,17 @@ from collections import defaultdict
 import sys
 import heapq
 
-# Adiciona um vértice disconexo ao grafo se for um novo vértice
-# v: vértice
-def add_vertex(graph, v):
-	graph[v] = []
+# Cria uma matriz de adjacência preenchida por zeros
+# V: número de vértices
+def create_adjacency_matrix(V, p_value):
+	matrix = []
+	for _ in range(0, V+1):
+		row = []
+		for _ in range(0, V+1):
+			row.append(p_value)
+		matrix.append(row)
+
+	return matrix
 
 # Adiciona uma aresta ponderada entre dois vértices
 # u: vértice de origem da aresta
@@ -27,77 +34,97 @@ def update_weight(graph, u, v, new_weight):
 
 # dijkstra: Any -> int
 # Implementa o algoritmo de dijkstra para menor caminho em um grafo.
-def dijkstra(graph, dist_dict, start_vertex, destiny_vertex):
-	#print("DIJKSTRA DE", start_vertex, "PARA", destiny_vertex, "\n-------------------\n")
-	#print("Grafo: ", graph, "\n")
+# def dijkstra(graph, dist_dict, start_vertex, destiny_vertex):
 
-	if len(dist_dict) == 0:
-		distances = {v: float('infinity') for v in graph}
-		distances[start_vertex] = 0
+# 	if len(dist_dict) == 0:
+# 		distances = {v: float('infinity') for v in graph}
+# 		distances[start_vertex] = 0
+# 	else:
+# 		if start_vertex in dist_dict:
+# 			distances = dist_dict[start_vertex]
+# 		else:
+# 			distances = {v: float('infinity') for v in graph}
+# 			distances[start_vertex] = 0
+# 	pred = {}
+# 	visited = set()
+# 	pq = []
+	
+# 	for v in distances:
+# 		heapq.heappush(pq, (distances[v], v))
+
+# 	while len(pq) > 0:
+# 		_, current_vertex = heapq.heappop(pq)
+		
+# 		if destiny_vertex in distances and distances[destiny_vertex] == float('infinity'):
+
+# 				if current_vertex not in visited:
+# 					visited.add(current_vertex)
+# 					if current_vertex == destiny_vertex: return pred, distances
+
+# 					for neighbour, weight in graph[current_vertex]:
+# 						if neighbour in visited: continue
+# 						updated_distance = distances[current_vertex] + weight
+# 						if neighbour in distances and updated_distance < distances[neighbour]:
+# 								distances[neighbour] = updated_distance
+# 								pred[current_vertex] = neighbour
+# 								heapq.heappush(pq, (updated_distance, neighbour))
+
+# 		else:
+# 			return pred, distances
+			
+# 	return pred, distances
+
+# dijkstra: Any -> int
+# Implementa o algoritmo de dijkstra para menor caminho em um grafo.
+def dijkstra2(graph, dist_matrix, start_vertex, destiny_vertex):
+
+	if len(dist_matrix) == 0:
+		distances = create_adjacency_matrix(len(graph), float('infinity'))
 	else:
-		if start_vertex in dist_dict:
-			distances = dist_dict[start_vertex]
-		else:
-			distances = {v: float('infinity') for v in graph}
-			distances[start_vertex] = 0
+		distances = dist_matrix
 
-	#print("memória inicial\t", dist_dict)
-
+	distances[start_vertex][start_vertex] = 0
 	pred = {}
 	visited = set()
+
 	pq = []
 	
-	for v in distances:
-		heapq.heappush(pq, (distances[v], v))
+	for vertex in range(1, len(distances)):
+		heapq.heappush(pq, (distances[start_vertex][vertex], vertex))
 
 	while len(pq) > 0:
 		_, current_vertex = heapq.heappop(pq)
-		#print("visitados:\t", visited)
-		#print("vertice atual:\t", current_vertex)
-
-		#print("distancia até o destino\t", distances[destiny_vertex])
 		
-		if destiny_vertex in distances and distances[destiny_vertex] == float('infinity'):
+		if distances[start_vertex][destiny_vertex] == float('infinity'):
 
-				if current_vertex not in visited:
-					visited.add(current_vertex)
-					if current_vertex == destiny_vertex: return pred, distances
+			if current_vertex not in visited:
+				visited.add(current_vertex)
 
-					for neighbour, weight in graph[current_vertex]:
-						if neighbour in visited: continue
-						updated_distance = distances[current_vertex] + weight
-						if neighbour in distances and updated_distance < distances[neighbour]:
-								distances[neighbour] = updated_distance
-								pred[current_vertex] = neighbour
-								heapq.heappush(pq, (updated_distance, neighbour))
+				# Se chegou ao vértice de destino, retornar
+				if current_vertex == destiny_vertex: return pred, distances
 
+				for neighbour, weight in graph[str(current_vertex)]:
+					if neighbour in visited: continue
+					updated_distance = distances[start_vertex][current_vertex] + weight
+
+					if updated_distance < distances[start_vertex][int(neighbour)]:
+							distances[start_vertex][int(neighbour)] = updated_distance
+							pred[current_vertex] = neighbour
+							heapq.heappush(pq, (updated_distance, int(neighbour)))
+				if current_vertex == destiny_vertex: return pred, distances
 		else:
-			#print("SKIP!")
 			return pred, distances
-			
-	return pred, distances
 
 # shortest_path_cost: Any, Any -> int
 # Obtém o custo do menor caminho entre uma origem e um destino no grafo.
-def shortest_path_cost(graph, dist_dict, u, v):
-	saved_paths, distances = dijkstra(graph, memory, u, v)
+def shortest_path_cost(graph, distances, u, v):
+	_, distances = dijkstra2(graph, distances, u, v)
 
-	if u not in memory:
-		memory[u] = distances
-
-	#print("Distâncias salvas\t", memory)
-
-	#print("shortest path:\t", saved_paths)
-	#print("distancia:\t", distances[v])
-
-	cost = float('infinity')
-	for destiny, distance in distances.items():
-		if destiny == v:
-			cost = distance
-			if distance == float('infinity'):
-				cost = "Nao e possivel entregar a carta"
+	cost = distances[u][v]
+	if cost == float('infinity'):
+		cost = "Nao e possivel entregar a carta"
 	
-	return cost
+	return distances, cost
 
 graph_1 = defaultdict(list)
 dict_consultas = defaultdict(list)
@@ -139,18 +166,21 @@ while(first_line != "0 0"):
 	if K > 100:
 			continue
 
-	memory = {}
+	graph_save = []
 
 	while (count < K):
 		consulta = input()
 		O, D = consulta.split(" ")
 
-		if int(D) > N:
+		O = int(O)
+		D = int(D)
+
+		if D > N:
 			continue
 		
-		res = shortest_path_cost(graph_1, memory, O, D)
+		graph_save, res = shortest_path_cost(graph_1, graph_save, O, D)
 
-		# print("\n---\nresultado\t",res, "\n---\n")
+		# print("---\nresultado\t",res, "\n---")
 		print(res)
 
 		count += 1
@@ -158,7 +188,6 @@ while(first_line != "0 0"):
 	print()
 
 	graph_1.clear()
-	memory.clear()
 	dict_consultas.clear()
 
 	first_line = input()
